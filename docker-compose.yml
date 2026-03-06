@@ -1,0 +1,65 @@
+version: '3.9'
+
+services:
+  # ── API Server ──────────────────────────────────────────────────────────────
+  kinetic-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: kinetic-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      POSTGRES_URL: postgresql://kinetic:${POSTGRES_PASSWORD:-kinetic_secret}@postgres:5432/kinetic
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kinetic-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: kinetic-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: kinetic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kinetic_secret}
+      POSTGRES_DB: kinetic
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kinetic -d kinetic"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - kinetic-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  kinetic-net:
+    driver: bridge
