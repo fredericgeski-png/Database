@@ -20,9 +20,23 @@ const PORT       = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-prod';
 
 // ── DB pool ───────────────────────────────────────────────────────────────────
+// Try every variable name Railway might use
+const DB_URL =
+  process.env.POSTGRES_URL ||
+  process.env.DATABASE_URL ||
+  process.env.POSTGRESQL_URL ||
+  process.env.POSTGRES_PRIVATE_URL ||
+  process.env.DATABASE_PRIVATE_URL ||
+  null;
+
+console.log('🔍 ENV VARS AVAILABLE:', Object.keys(process.env).filter(k =>
+  k.includes('POSTGRES') || k.includes('DATABASE') || k.includes('PG') || k.includes('RAILWAY')
+));
+console.log('🔍 DB_URL found:', DB_URL ? DB_URL.replace(/:([^:@]+)@/, ':***@') : 'NONE');
+
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString: DB_URL,
+  ssl: { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
@@ -539,8 +553,8 @@ async function start() {
       break;
     } catch (err) {
       if (attempt === 10) {
-        console.error('❌ Could not connect to database after 10 attempts:', err.message);
-        console.error('Check POSTGRES_URL / DATABASE_URL environment variable');
+        console.error('❌ Could not connect after 10 attempts:', err.message);
+        console.error('❌ DB_URL:', DB_URL ? DB_URL.replace(/:([^:@]+)@/, ':***@') : 'UNDEFINED');
         // Still start server — health endpoint will show unhealthy
         break;
       }
