@@ -8,6 +8,7 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -15,6 +16,9 @@
     "express-rate-limit": "^7.3.1",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.11.5"
+    "node-fetch": "^3.3.2",
+    "pg": "^8.11.5",
+    "react": "^19.2.4",
+    "recharts": "^3.8.0"
   }
 }
