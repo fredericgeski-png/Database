@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kinetic — Integrity Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#050708;--sur:#0c0f12;--brd:#1a1f26;--cy:#00d4ff;--gr:#00ff9d;--ye:#ffd60a;--or:#ff6b35;--re:#ff3b5c;--di:#64748b;--tx:#e2e8f0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+#auth{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:var(--bg)}
+.abox{background:var(--sur);border:1px solid var(--brd);border-radius:16px;padding:36px;width:100%;max-width:400px;box-shadow:0 0 60px rgba(0,212,255,.07)}
+.alogo{text-align:center;margin-bottom:26px}
+.alogo h1{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--cy)}
+.alogo p{color:var(--di);font-size:11px;margin-top:4px}
+.apibox{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:8px;padding:10px 12px;margin-bottom:16px}
+.apibox label{font-size:10px;color:var(--cy);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px}
+.apibox input{width:100%;background:transparent;border:none;color:var(--tx);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none}
+.tabs{display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:4px;margin-bottom:18px}
+.tab{flex:1;padding:8px;border:none;border-radius:6px;background:transparent;color:var(--di);font-family:'JetBrains Mono',monospace;font-size:12px;cursor:pointer;transition:all .2s}
+.tab.on{background:var(--brd);color:var(--tx)}
+.fld{margin-bottom:13px}
+.fld label{display:block;font-size:10px;color:var(--di);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.fld input{width:100%;padding:11px 13px;background:var(--bg);border:1px solid var(--brd);border-radius:8px;color:var(--tx);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:border-color .2s}
+.fld input:focus{border-color:var(--cy)}
+.aerr{background:rgba(255,59,92,.1);border:1px solid rgba(255,59,92,.3);border-radius:8px;padding:10px 13px;color:var(--re);font-size:12px;margin-bottom:13px;display:none}
+.btnp{width:100%;padding:13px;background:linear-gradient(135deg,var(--cy),#09f);border:none;border-radius:8px;color:#000;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.05em}
+.btnp:hover{transform:translateY(-1px);box-shadow:0 0 30px rgba(0,212,255,.4)}
+.btnp:disabled{opacity:.5;cursor:not-allowed;transform:none}
+#app{display:none;position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:50;background:rgba(5,7,8,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--brd);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:54px}
+.brand{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--cy)}
+.brand span{color:var(--di);font-weight:400;font-size:11px;margin-left:8px}
+.navr{display:flex;align-items:center;gap:10px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gr);box-shadow:0 0 8px var(--gr);animation:pulse 2s infinite}
+.btnup{padding:6px 13px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:6px;color:var(--cy);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .2s}
+.btnup:hover{background:rgba(0,212,255,.2)}
+.btnlo{padding:6px 11px;background:transparent;border:1px solid var(--brd);border-radius:6px;color:var(--di);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s}
+.btnlo:hover{border-color:var(--re);color:var(--re)}
+main{max-width:1160px;margin:0 auto;padding:24px 20px}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.stit{font-size:10px;color:var(--di);text-transform:uppercase;letter-spacing:.15em}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:13px;margin-bottom:22px}
+.sc{background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:17px;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:.6}
+.sc.cy::before{background:var(--cy)}.sc.gr::before{background:var(--gr)}.sc.ye::before{background:var(--ye)}.sc.re::before{background:var(--re)}
+.slb{font-size:10px;color:var(--di);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.sv{font-size:30px;font-weight:700;line-height:1}
+.sv.cy{color:var(--cy)}.sv.gr{color:var(--gr)}.sv.ye{color:var(--ye);font-size:22px}.sv.re{color:var(--re)}
+.ss{font-size:10px;color:var(--di);margin-top:5px}
+.gw{display:flex;flex-direction:column;align-items:center}
+.kz{background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:17px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;gap:13px;flex-wrap:wrap}
+.kz h3{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
+.kz p{font-size:11px;color:var(--di);margin-top:3px}
+.btnk{padding:11px 22px;background:linear-gradient(135deg,#ff3b5c,#cc0033);border:none;border-radius:8px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 0 20px rgba(255,59,92,.3);letter-spacing:.05em}
+.btnk:hover{transform:translateY(-1px);box-shadow:0 0 35px rgba(255,59,92,.5)}
+.btnk:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btnk.conf{background:linear-gradient(135deg,#ff8c00,#cc6600);box-shadow:0 0 20px rgba(255,140,0,.3)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:22px}
+@media(max-width:680px){.two{grid-template-columns:1fr}}
+.pnl{background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:17px}
+.pt{font-size:10px;color:var(--di);text-transform:uppercase;letter-spacing:.08em;margin-bottom:13px;display:flex;align-items:center;justify-content:space-between}
+.agt{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border-radius:8px;background:var(--bg);margin-bottom:7px;border:1px solid var(--brd)}
+.an{font-size:13px;font-weight:500}
+.am{font-size:10px;color:var(--di);margin-top:2px}
+.bdg{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:700}
+.addr{display:flex;gap:8px;margin-top:10px}
+.addr input{flex:1;padding:9px 11px;background:var(--bg);border:1px solid var(--brd);border-radius:8px;color:var(--tx);font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;transition:border-color .2s}
+.addr input:focus{border-color:var(--cy)}
+.btna{padding:9px 14px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:8px;color:var(--cy);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s}
+.btna:hover{background:rgba(0,212,255,.2)}
+.feed{max-height:260px;overflow-y:auto}
+.fi{display:grid;grid-template-columns:68px 1fr auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--brd);font-size:11px}
+.fi:last-child{border-bottom:none}
+.ft{color:var(--di)}
+.calc{background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:17px;margin-bottom:22px}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:13px 0}
+@media(max-width:500px){.cg{grid-template-columns:1fr}}
+.cf label{font-size:10px;color:var(--di);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px}
+.cf input,.cf select{width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--brd);border-radius:8px;color:var(--tx);font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;transition:border-color .2s}
+.cf input:focus,.cf select:focus{border-color:var(--cy)}
+.cf select option{background:var(--sur)}
+.res{background:var(--bg);border:1px solid var(--brd);border-radius:10px;padding:15px;margin-top:13px;display:none}
+.res.show{display:block}
+.rsc{font-size:36px;font-weight:700;line-height:1;margin-bottom:11px}
+.bb{margin-bottom:7px}
+.bl2{display:flex;justify-content:space-between;font-size:10px;color:var(--di);margin-bottom:3px}
+.bt2{height:4px;background:var(--brd);border-radius:2px;overflow:hidden}
+.bf{height:100%;border-radius:2px;transition:width .6s ease}
+.sdk{background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:17px;margin-bottom:22px}
+.stabs{display:flex;gap:4px;margin-bottom:13px}
+.stab{padding:6px 13px;border:1px solid var(--brd);border-radius:6px;background:transparent;color:var(--di);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s}
+.stab.on{border-color:var(--cy);color:var(--cy);background:rgba(0,212,255,.08)}
+pre{background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:14px;font-size:11px;line-height:1.7;overflow-x:auto;color:#a8b4c0;white-space:pre}
+.kw{color:#569cd6}.str{color:#ce9178}.cm{color:#6a9955}.fn{color:#dcdcaa}.num{color:#b5cea8}
+.toasts{position:fixed;top:14px;right:14px;z-index:300}
+.toast{padding:11px 15px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:8px;min-width:210px;border:1px solid;animation:sli .3s ease}
+.toast.s{background:rgba(0,255,157,.1);border-color:rgba(0,255,157,.3);color:var(--gr)}
+.toast.e{background:rgba(255,59,92,.1);border-color:rgba(255,59,92,.3);color:var(--re)}
+.empty{text-align:center;padding:26px;color:var(--di);font-size:12px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes sli{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin .8s linear infinite}
+</style>
+</head>
+<body>
+
+<div id="auth">
+  <div class="abox">
+    <div class="alogo">
+      <h1>⚡ KINETIC</h1>
+      <p>Integrity Monitor · AI Agent Observability</p>
+    </div>
+    <div class="apibox">
+      <label>Your Railway API URL</label>
+      <input type="text" id="api-url" placeholder="https://kinetic-xxxx.up.railway.app"/>
+    </div>
+    <div class="tabs">
+      <button class="tab on" id="tl">Login</button>
+      <button class="tab" id="ts">Sign Up</button>
+    </div>
+    <div class="aerr" id="aerr"></div>
+    <div class="fld"><label>Email</label><input type="email" id="em" placeholder="you@example.com"/></div>
+    <div class="fld"><label>Password</label><input type="password" id="pw" placeholder="••••••••"/></div>
+    <button class="btnp" id="abtn">Sign In</button>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<div id="app">
+  <nav>
+    <div class="brand">⚡ KINETIC <span>LIVE</span></div>
+    <div class="navr">
+      <div class="dot"></div>
+      <a href="https://fredericgeski.selar.com/727l48e1z1" target="_blank" class="btnup" id="upgrade-btn">⚡ Pro</a>
+      <button class="btnlo">Logout</button>
+    </div>
+  </nav>
+  <main>
+    <div class="sh">
+      <div class="stit">Live Stats · 24h</div>
+      <div id="ref" style="font-size:10px;color:var(--di)">—</div>
+    </div>
+    <div class="sg">
+      <div class="sc cy">
+        <div class="slb">Avg Entropy</div>
+        <div class="gw">
+          <svg width="86" height="86" viewBox="0 0 86 86">
+            <circle cx="43" cy="43" r="34" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="6"/>
+            <circle id="garc" cx="43" cy="43" r="34" fill="none" stroke="#00d4ff"
+              stroke-width="6" stroke-linecap="round" stroke-dasharray="0 214"
+              transform="rotate(-90 43 43)"
+              style="transition:stroke-dasharray .8s ease,stroke .4s ease"/>
+            <text id="gpct" x="43" y="48" text-anchor="middle" fill="#00d4ff"
+              font-family="JetBrains Mono" font-size="13" font-weight="700">—</text>
+          </svg>
+          <div id="grsk" style="font-size:10px;color:var(--di);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">—</div>
+        </div>
+      </div>
+      <div class="sc gr">
+        <div class="slb">Active Sessions</div>
+        <div class="sv gr" id="ssess">—</div>
+        <div class="ss">agents running</div>
+      </div>
+      <div class="sc ye">
+        <div class="slb">Waste Prevented</div>
+        <div class="sv ye" id="swaste">—</div>
+        <div class="ss">estimated savings</div>
+      </div>
+      <div class="sc re">
+        <div class="slb">Kill Events</div>
+        <div class="sv re" id="skill">—</div>
+        <div class="ss">last 24 hours</div>
+      </div>
+    </div>
+
+    <div class="kz">
+      <div>
+        <h3>🛑 Emergency Kill Switch</h3>
+        <p>Terminates ALL active agents immediately and fires webhooks.</p>
+      </div>
+      <button class="btnk" id="kbtn">KILL ALL AGENTS</button>
+    </div>
+
+    <div class="two">
+      <div class="pnl">
+        <div class="pt">
+          <span>Your Agents</span>
+          <span id="acnt" style="color:var(--cy)">0/5</span>
+        </div>
+        <div id="alist"><div class="empty">Loading...</div></div>
+        <div class="addr">
+          <input type="text" id="nname" placeholder="Agent name..."/>
+          <button class="btna">+ Add</button>
+        </div>
+      </div>
+      <div class="pnl">
+        <div class="pt">
+          <span>Live Telemetry</span>
+          <span style="color:var(--di)">last 20</span>
+        </div>
+        <div class="feed" id="tfeed"><div class="empty">Loading...</div></div>
+      </div>
+    </div>
+
+    <div class="calc">
+      <div class="pt"><span>Entropy Calculator</span><span style="color:var(--di)">test your agent</span></div>
+      <div class="cg">
+        <div class="cf"><label>Agent</label><select id="cagt"><option value="">Select agent...</option></select></div>
+        <div class="cf"><label>Loop Count</label><input type="number" id="clps" value="3" min="0"/></div>
+        <div class="cf"><label>Prompt Tokens</label><input type="number" id="cpro" value="500" min="0"/></div>
+        <div class="cf"><label>Completion Tokens</label><input type="number" id="ccom" value="150" min="0"/></div>
+        <div class="cf"><label>Avg Exec (ms)</label><input type="number" id="cavg" value="1200" min="0"/></div>
+        <div class="cf"><label>P99 Exec (ms)</label><input type="number" id="cp99" value="3000" min="0"/></div>
+      </div>
+      <button class="btnp" style="max-width:200px">▶ Run Entropy</button>
+      <div class="res" id="cres">
+        <div class="rsc" id="csco">—</div>
+        <div id="cbrk"></div>
+        <div id="ckil" style="margin-top:10px;font-size:11px"></div>
+      </div>
+    </div>
+
+    <div class="sdk">
+      <div class="pt"><span>SDK Integration</span></div>
+      <div class="stabs">
+        <button class="stab on">Python</button>
+        <button class="stab">Node.js</button>
+        <button class="stab">cURL</button>
+      </div>
+      <div id="skpy">
+<pre><span class="cm"># pip install requests</span>
+<span class="kw">import</span> requests
+
+API   = <span class="str" id="spu">"https://your-app.up.railway.app"</span>
+TOKEN = <span class="str">"your_jwt_token"</span>  <span class="cm"># from /api/v1/auth/login</span>
+H     = {<span class="str">"Authorization"</span>: <span class="fn">f</span><span class="str">"Bearer {TOKEN}"</span>}
+
+r = requests.<span class="fn">post</span>(API + <span class="str">"/api/v1/calculate-entropy"</span>, headers=H, json={
+    <span class="str">"agent_id"</span>: <span class="str">"your-agent-uuid"</span>,
+    <span class="str">"metrics"</span>: {
+        <span class="str">"token_usage"</span>:    {<span class="str">"prompt_tokens"</span>:<span class="num">500</span>,<span class="str">"completion_tokens"</span>:<span class="num">150</span>,<span class="str">"total_tokens"</span>:<span class="num">650</span>},
+        <span class="str">"execution_time"</span>: {<span class="str">"average_ms"</span>:<span class="num">1200</span>,<span class="str">"p95_ms"</span>:<span class="num">2100</span>,<span class="str">"p99_ms"</span>:<span class="num">3000</span>},
+        <span class="str">"loop_count"</span>:     <span class="num">3</span>,
+        <span class="str">"tool_calls"</span>:     {<span class="str">"total"</span>:<span class="num">8</span>,<span class="str">"by_tool"</span>:{<span class="str">"search"</span>:<span class="num">5</span>,<span class="str">"calc"</span>:<span class="num">3</span>}}
+    }
+})
+d = r.<span class="fn">json</span>()
+<span class="fn">print</span>(<span class="fn">f</span><span class="str">"Entropy: {d['entropy']['total']:.3f} · {d['entropy']['risk_level']}"</span>)</pre>
+      </div>
+      <div id="sknd" style="display:none">
+<pre><span class="kw">const</span> API   = <span class="str" id="snu">"https://your-app.up.railway.app"</span>;
+<span class="kw">const</span> TOKEN = <span class="str">"your_jwt_token"</span>;
+
+fetch(API + <span class="str">"/api/v1/calculate-entropy"</span>, {
+  method: <span class="str">"POST"</span>,
+  headers: {<span class="str">"Authorization"</span>: <span class="str">"Bearer "</span> + TOKEN, <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>},
+  body: <span class="fn">JSON.stringify</span>({
+    agent_id: <span class="str">"your-agent-uuid"</span>,
+    metrics: {
+      token_usage:    {prompt_tokens:<span class="num">500</span>,completion_tokens:<span class="num">150</span>,total_tokens:<span class="num">650</span>},
+      execution_time: {average_ms:<span class="num">1200</span>,p95_ms:<span class="num">2100</span>,p99_ms:<span class="num">3000</span>},
+      loop_count:     <span class="num">3</span>,
+      tool_calls:     {total:<span class="num">8</span>,by_tool:{search:<span class="num">5</span>,calc:<span class="num">3</span>}}
+    }
+  })
+}).<span class="fn">then</span>(<span class="kw">function</span>(r){ <span class="kw">return</span> r.<span class="fn">json</span>(); })
+  .<span class="fn">then</span>(<span class="kw">function</span>(d){ console.<span class="fn">log</span>(d.entropy.total, d.entropy.risk_level); });</pre>
+      </div>
+      <div id="skcu" style="display:none">
+<pre><span class="cm"># 1. Login and get token</span>
+curl -X POST <span class="str" id="scu">"https://your-app.up.railway.app"</span><span class="str">"/api/v1/auth/login"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"email":"you@example.com","password":"pass"}'</span>
+
+<span class="cm"># 2. Calculate entropy</span>
+curl -X POST <span class="str">"https://your-app.up.railway.app/api/v1/calculate-entropy"</span> \
+  -H <span class="str">"Authorization: Bearer YOUR_TOKEN"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"agent_id":"UUID","metrics":{"token_usage":{"prompt_tokens":500,"completion_tokens":150,"total_tokens":650},"execution_time":{"average_ms":1200,"p95_ms":2100,"p99_ms":3000},"loop_count":3,"tool_calls":{"total":8,"by_tool":{"search":5}}}}'</span></pre>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+var TOK = localStorage.getItem('kt') || '';
+var API = localStorage.getItem('ka') || '';
+var ks  = 0;
+var tmr = null;
+
+
+
+function switchTab(t) {
+  document.getElementById('tl').className = 'tab' + (t==='login' ? ' on' : '');
+  document.getElementById('ts').className = 'tab' + (t==='signup' ? ' on' : '');
+  document.getElementById('abtn').textContent = t==='login' ? 'Sign In' : 'Create Account';
+  document.getElementById('aerr').style.display = 'none';
+}
+
+function doAuth() {
+  var btn = document.getElementById('abtn');
+  var isL = btn.textContent === 'Sign In';
+  var email = document.getElementById('em').value.trim();
+  var pass  = document.getElementById('pw').value;
+  var api   = (document.getElementById('api-url').value || '').replace(/\/$/,'');
+  if (!api)   { setErr('Enter your Railway API URL above'); return; }
+  if (!email) { setErr('Email is required'); return; }
+  if (!pass)  { setErr('Password is required'); return; }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">⟳</span> ' + (isL ? 'Signing in...' : 'Creating...');
+  document.getElementById('aerr').style.display = 'none';
+  fetch(api + (isL ? '/api/v1/auth/login' : '/api/v1/auth/signup'), {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({email:email, password:pass})
+  }).then(function(r) {
+    return r.json().then(function(d){ return {ok:r.ok, d:d}; });
+  }).then(function(r) {
+    if (!r.ok) throw new Error(r.d.error || r.d.message || 'Auth failed');
+    TOK = r.d.token; API = api;
+    localStorage.setItem('kt', TOK);
+    localStorage.setItem('ka', API);
+    showApp();
+  }).catch(function(e) {
+    setErr('Error: ' + e.message + ' — Is the API URL correct?');
+  }).finally(function() {
+    btn.disabled = false;
+    btn.textContent = isL ? 'Sign In' : 'Create Account';
+  });
+}
+
+function setErr(m) {
+  var el = document.getElementById('aerr');
+  el.textContent = m; el.style.display = 'block';
+}
+
+function showApp() {
+  document.getElementById('auth').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  var q = '"' + API + '"';
+  ['spu','snu','scu'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.textContent = q;
+  });
+  startPoll();
+}
+
+function logout() {
+  localStorage.removeItem('kt');
+  localStorage.removeItem('ka');
+  clearInterval(tmr);
+  location.reload();
+}
+
+function af(path, opts) {
+  opts = opts || {};
+  return fetch(API + path, {
+    method: opts.method || 'GET',
+    headers: {'Authorization':'Bearer '+TOK,'Content-Type':'application/json'},
+    body: opts.body || undefined
+  }).then(function(r) {
+    if (r.status === 401) { logout(); return null; }
+    return r.json();
+  }).catch(function(e) {
+    toast('Network error: ' + e.message, 'e');
+    return null;
+  });
+}
+
+function startPoll() { refresh(); tmr = setInterval(refresh, 5000); }
+
+function refresh() {
+  document.getElementById('ref').textContent = 'updated ' + new Date().toLocaleTimeString();
+  loadStats(); loadAgents(); loadTel();
+}
+
+function loadStats() {
+  af('/api/v1/telemetry/stats').then(function(data) {
+    if (!data) return;
+    var s = data.last_24_hours;
+    var e = s.average_entropy || 0;
+    var d = 214 * Math.min(1, e);
+    var c = ec(e);
+    var arc = document.getElementById('garc');
+    arc.setAttribute('stroke-dasharray', d + ' 214');
+    arc.setAttribute('stroke', c);
+    arc.style.filter = 'drop-shadow(0 0 5px ' + c + ')';
+    document.getElementById('gpct').textContent = Math.round(e*100) + '%';
+    document.getElementById('gpct').setAttribute('fill', c);
+    document.getElementById('grsk').textContent = rl(e);
+    document.getElementById('grsk').style.color = c;
+    document.getElementById('ssess').textContent  = s.active_sessions || 0;
+    document.getElementById('swaste').textContent = '$' + Math.round(s.total_waste_prevented_usd||0).toLocaleString();
+    document.getElementById('skill').textContent  = s.kill_switch_triggers || 0;
+  });
+}
+
+function loadAgents() {
+  af('/api/v1/agents').then(function(data) {
+    if (!data) return;
+    var sub = data.subscription;
+    var lim = sub.agent_limit === -1 ? '∞' : sub.agent_limit;
+    document.getElementById('acnt').textContent = sub.agent_count + ' / ' + lim;
+    var sel = document.getElementById('cagt');
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">Select agent...</option>';
+    data.agents.forEach(function(a) {
+      var o = document.createElement('option');
+      o.value = a.id; o.textContent = a.name;
+      if (a.id === prev) o.selected = true;
+      sel.appendChild(o);
+    });
+    var lst = document.getElementById('alist');
+    if (!data.agents.length) { lst.innerHTML = '<div class="empty">No agents yet. Add one below.</div>'; return; }
+    lst.innerHTML = data.agents.map(function(a) {
+      var e = a.entropy_score;
+      var eb = e != null ? '<span class="bdg" style="background:' + ec(e) + '22;color:' + ec(e) + '">' + Math.round(e*100) + '%</span>' : '';
+      var sb = '<span class="bdg" style="background:' + (a.status==='active'?'rgba(0,255,157,.1)':'rgba(255,59,92,.1)') + ';color:' + (a.status==='active'?'var(--gr)':'var(--re)') + '">' + a.status + '</span>';
+      return '<div class="agt"><div><div class="an">' + a.name + '</div><div class="am">' + a.framework + ' · ' + a.id.slice(0,8) + '...</div></div><div style="display:flex;gap:6px">' + eb + sb + '</div></div>';
+    }).join('');
+  });
+}
+
+function addAgent() {
+  var inp = document.getElementById('nname');
+  var nm  = inp.value.trim();
+  if (!nm) return;
+  af('/api/v1/agents', {method:'POST', body:JSON.stringify({name:nm,framework:'custom'})}).then(function(d) {
+    if (!d) return;
+    if (d.upgrade_url) { window.open('https://fredericgeski.selar.com/727l48e1z1','_blank'); toast('Upgrade to Pro for unlimited agents','e'); return; }
+    inp.value = ''; toast('Agent created: ' + nm); loadAgents();
+  });
+}
+
+function loadTel() {
+  af('/api/v1/telemetry?limit=20').then(function(data) {
+    if (!data) return;
+    var feed = document.getElementById('tfeed');
+    if (!data.events || !data.events.length) { feed.innerHTML = '<div class="empty">No events yet</div>'; return; }
+    var colors = {entropy_calculated:'var(--cy)',kill_switch_activated:'var(--re)',kill_switch_auto_triggered:'var(--re)',kill_switch_reset:'var(--gr)'};
+    feed.innerHTML = data.events.map(function(e) {
+      var t = new Date(e.created_at).toLocaleTimeString();
+      var sc = e.event_data && e.event_data.entropy_score != null ? '<span>' + Math.round(e.event_data.entropy_score*100) + '%</span>' : '<span></span>';
+      var c = colors[e.event_type] || 'var(--di)';
+      return '<div class="fi"><span class="ft">' + t + '</span><span style="color:' + c + '">' + e.event_type.replace(/_/g,' ') + '</span>' + sc + '</div>';
+    }).join('');
+  });
+}
+
+function handleKill() {
+  var btn = document.getElementById('kbtn');
+  if (ks === 0) {
+    ks = 1; btn.textContent = '⚠️ CONFIRM — TAP AGAIN'; btn.classList.add('conf');
+    setTimeout(function(){ ks=0; btn.textContent='KILL ALL AGENTS'; btn.classList.remove('conf'); }, 4000);
+    return;
+  }
+  ks = 0; btn.disabled = true; btn.textContent = '⟳ Terminating...';
+  af('/api/v1/kill-switch/activate', {method:'POST', body:JSON.stringify({reason:'Dashboard emergency shutdown'})}).then(function(d) {
+    btn.disabled = false; btn.textContent = 'KILL ALL AGENTS'; btn.classList.remove('conf');
+    if (d) { toast('Terminated ' + d.terminated_count + ' agent(s)'); refresh(); }
+    else toast('Kill switch failed','e');
+  });
+}
+
+function runCalc() {
+  var aid = document.getElementById('cagt').value;
+  if (!aid) { toast('Select an agent first','e'); return; }
+  var pr = parseInt(document.getElementById('cpro').value)||500;
+  var co = parseInt(document.getElementById('ccom').value)||150;
+  var lp = parseInt(document.getElementById('clps').value)||0;
+  var av = parseInt(document.getElementById('cavg').value)||1200;
+  var p9 = parseInt(document.getElementById('cp99').value)||3000;
+  af('/api/v1/calculate-entropy', {method:'POST', body:JSON.stringify({
+    agent_id: aid,
+    metrics: {
+      token_usage:    {prompt_tokens:pr,completion_tokens:co,total_tokens:pr+co},
+      execution_time: {average_ms:av,p95_ms:Math.round(p9*.9),p99_ms:p9},
+      loop_count:     lp,
+      tool_calls:     {total:8,by_tool:{search:5,calculator:3}}
+    }
+  })}).then(function(data) {
+    if (!data) return;
+    var e = data.entropy;
+    document.getElementById('csco').textContent = Math.round(e.total*100) + '% · ' + e.risk_level.toUpperCase();
+    document.getElementById('csco').style.color = ec(e.total);
+    var b = e.breakdown;
+    var rows = [['Shannon',b.shannonEntropy],['Loop Penalty',b.loopPenalty],['Tool Variance',b.toolVariance],['Drift',b.driftScore]];
+    document.getElementById('cbrk').innerHTML = rows.map(function(r) {
+      return '<div class="bb"><div class="bl2"><span>'+r[0]+'</span><span style="color:'+ec(r[1])+'">'+Math.round(r[1]*100)+'%</span></div><div class="bt2"><div class="bf" style="width:'+(r[1]*100)+'%;background:'+ec(r[1])+'"></div></div></div>';
+    }).join('');
+    var kl = document.getElementById('ckil');
+    kl.textContent = data.kill_switch_triggered ? '⚠️ Kill switch triggered — agent terminated' : '💰 Waste prevented: $'+data.waste_prevented_usd;
+    kl.style.color = data.kill_switch_triggered ? 'var(--re)' : 'var(--gr)';
+    document.getElementById('cres').classList.add('show');
+    toast('Entropy: ' + Math.round(e.total*100) + '% · ' + e.risk_level);
+    loadAgents(); loadStats();
+  });
+}
+
+function showSdk(l) {
+  ['py','nd','cu'].forEach(function(x){ document.getElementById('sk'+x).style.display = x===l?'block':'none'; });
+  document.querySelectorAll('.stab').forEach(function(t,i){ t.className = 'stab' + (['py','nd','cu'][i]===l?' on':''); });
+}
+
+function ec(e) {
+  if (e<.3) return 'var(--gr)';
+  if (e<.5) return 'var(--ye)';
+  if (e<.7) return 'var(--or)';
+  return 'var(--re)';
+}
+function rl(e) {
+  if (e<.3) return 'low';
+  if (e<.5) return 'medium';
+  if (e<.7) return 'high';
+  return 'critical';
+}
+function toast(m, t) {
+  t = t||'s';
+  var el = document.createElement('div');
+  el.className = 'toast ' + t;
+  el.textContent = m;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(function(){ el.remove(); }, 4000);
+}
+
+// Bind all buttons via addEventListener (sandbox-safe)
+function bindBtn(id, fn) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('click', fn);
+}
+document.addEventListener('DOMContentLoaded', function() {
+  bindBtn('tl',   function(){ switchTab('login'); });
+  bindBtn('ts',   function(){ switchTab('signup'); });
+  bindBtn('abtn', function(){ doAuth(); });
+  bindBtn('kbtn', function(){ handleKill(); });
+  bindBtn('nname-btn', function(){ addAgent(); });
+  bindBtn('calc-btn',  function(){ runCalc(); });
+  bindBtn('logout-btn',function(){ logout(); });
+  bindBtn('upgrade-btn',function(){ window.open('https://fredericgeski.selar.com/727l48e1z1','_blank'); });
+
+  // SDK tabs
+  document.querySelectorAll('.stab').forEach(function(t) {
+    t.addEventListener('click', function(){ showSdk(t.getAttribute('data-lang')); });
+  });
+
+  document.getElementById('pw').addEventListener('keydown',    function(e){ if(e.key==='Enter') doAuth(); });
+  document.getElementById('nname').addEventListener('keydown', function(e){ if(e.key==='Enter') addAgent(); });
+
+  if (API) document.getElementById('api-url').value = API;
+  if (TOK && API) showApp();
+});
+
+</script>
+</body>
+</html>
